@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# Generated caches and large transit data
+gtfs_seoul_cache.pkl
+*.pkl
+stop_times.txt
+stops.txt
+trips.txt
+routes.txt
+calendar.txt
+agency.txt
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Optional generated artifacts
+*.log
