@@ -14,8 +14,8 @@ import streamlit as st
 from model import Params, rental_from_v1_row
 from simulate import MCInputs, run_mc, tornado
 
-_BLUE, _ORANGE, _PURPLE = "#2e86de", "#eb6e4b", "#8d6bd6"
-_TEXT, _MUTED, _GRID = "#18212f", "#637083", "#d9e2ec"
+_BLUE, _ORANGE, _PURPLE = "#8b5cf6", "#ff4d1f", "#1495ef"
+_TEXT, _MUTED, _GRID = "#18212f", "#637083", "#d8e2ee"
 
 
 def _light_layout(fig: go.Figure) -> None:
@@ -46,7 +46,7 @@ def _params(assumptions: dict) -> Params:
 
 
 def render(result: pd.DataFrame, assumptions: dict) -> None:
-    st.subheader("불확실성 분석 — 답 대신 확률을")
+    st.subheader("확률 분석 — 답 대신 확률을")
     st.caption(
         "통학시간·시간가치 같은 입력은 하나의 숫자가 아니라 범위입니다. "
         "범위를 입력하면 1만 개의 가상 시나리오를 만들어 "
@@ -149,14 +149,14 @@ def render(result: pd.DataFrame, assumptions: dict) -> None:
     st.caption("막대가 보라색 0선을 가로지르는 입력은 그 하나만으로 결론을 "
                "뒤집을 수 있다는 뜻입니다. 가로지르지 않으면 결론은 그 입력에 견고합니다.")
 
-    # ── 정보의 가치
-    d, e, f = st.columns(3)
-    d.metric("EVPI — 완전정보의 가치", f"{res['evpi']:.1f}만원/년",
-             help="결정 전에 모든 불확실성이 해소된다면 기대할 수 있는 추가 절감. "
-                  "어떤 조사·정보 수집도 이 값 이상의 가치를 가질 수 없는 상한선.")
-    e.metric("통학시간 실측의 가치", f"{res['evppi_commute']:.1f}만원/년",
-             help="결정 전에 한 달간 통학시간만 실제로 재 보는 행위의 기대 가치(EVPPI). "
-                  "이 값이 실측에 드는 수고보다 크면 실측이 합리적입니다.")
-    f.metric("시간가치 성찰의 가치", f"{res['evppi_wage']:.1f}만원/년",
-             help="'내 1시간이 실제로 얼마인가'를 확정하는 것의 기대 가치(EVPPI). "
-                  "통학시간 실측보다 이 값이 크면, 측정보다 자기 기준 정립이 먼저입니다.")
+    # ── 정보의 가치 (EVPI) — 비활성화됨; 아래 주석을 해제하면 복구
+    # d, e, f = st.columns(3)
+    # d.metric("EVPI — 완전정보의 가치", f"{res['evpi']:.1f}만원/년",
+    #          help="결정 전에 모든 불확실성이 해소된다면 기대할 수 있는 추가 절감. "
+    #               "어떤 조사·정보 수집도 이 값 이상의 가치를 가질 수 없는 상한선.")
+    # e.metric("통학시간 실측의 가치", f"{res['evppi_commute']:.1f}만원/년",
+    #          help="결정 전에 한 달간 통학시간만 실제로 재 보는 행위의 기대 가치(EVPPI). "
+    #               "이 값이 실측에 드는 수고보다 크면 실측이 합리적입니다.")
+    # f.metric("시간가치 성찰의 가치", f"{res['evppi_wage']:.1f}만원/년",
+    #          help="'내 1시간이 실제로 얼마인가'를 확정하는 것의 기대 가치(EVPPI). "
+    #               "통학시간 실측보다 이 값이 크면, 측정보다 자기 기준 정립이 먼저입니다.")

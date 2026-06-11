@@ -22,8 +22,8 @@ from aggregate import (
     relaxation_hints,
 )
 
-_BLUE, _ORANGE, _PURPLE, _GRAY = "#2e86de", "#eb6e4b", "#8d6bd6", "#9aa3ad"
-_TEXT, _MUTED, _GRID = "#18212f", "#637083", "#d9e2ec"
+_BLUE, _ORANGE, _PURPLE, _GRAY = "#1495ef", "#ff4d1f", "#8b5cf6", "#9aa3ad"
+_TEXT, _MUTED, _GRID = "#18212f", "#637083", "#d8e2ee"
 
 
 def _light_layout(fig: go.Figure) -> None:
@@ -42,7 +42,7 @@ def _light_layout(fig: go.Figure) -> None:
 
 
 def render(result: pd.DataFrame) -> None:
-    st.subheader("무형가치 처리 — 제약·환산·프런티어 3단 로직")
+    st.subheader("안전·편의 반영 — 제약·환산·프런티어")
     st.caption(
         "안전은 돈으로 거래되지 않으므로 점수(가중치)가 아닌 자격 요건(제약)으로, "
         "편의는 거래 가능하므로 지불용의(WTP)로 화폐 환산해 비용에 합산합니다."

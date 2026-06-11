@@ -17,14 +17,14 @@ from model import (
     tau,
 )
 
-_COL_RENTAL = "rgba(46, 134, 222, 0.18)"   # 자취 유리 영역
-_COL_COMMUTE = "rgba(235, 110, 75, 0.18)"  # 통학 유리 영역
-_COL_LINE = "#8d6bd6"
-_COL_BAND = "rgba(141, 107, 214, 0.22)"
-_COL_POINT = "#f5b942"
+_COL_RENTAL = "rgba(139, 92, 246, 0.18)"   # 자취 유리 영역
+_COL_COMMUTE = "rgba(255, 77, 31, 0.16)"  # 통학 유리 영역
+_COL_LINE = "#ff4d1f"
+_COL_BAND = "rgba(255, 189, 89, 0.22)"
+_COL_POINT = "#ffbd59"
 _TEXT = "#18212f"
 _MUTED = "#637083"
-_GRID = "#d9e2ec"
+_GRID = "#d8e2ee"
 
 
 def _light_layout(fig: go.Figure) -> None:
@@ -169,12 +169,12 @@ def build_boundary_figure(
     fig.add_annotation(
         x=m_lo + (m_hi - m_lo) * 0.04, y=r_top * 0.95,
         text="<b>통학 유리</b>", showarrow=False,
-        font=dict(color="#c0593a", size=14), xanchor="left",
+        font=dict(color="#c15a3d", size=14), xanchor="left",
     )
     fig.add_annotation(
         x=m_hi - (m_hi - m_lo) * 0.04, y=r_top * 0.06,
         text="<b>자취 유리</b>", showarrow=False,
-        font=dict(color="#2868a8", size=14), xanchor="right",
+        font=dict(color="#2569be", size=14), xanchor="right",
     )
 
     fig.update_layout(
@@ -213,7 +213,7 @@ def build_breakdown_figure(
 
     cats = [f"통학 (편도 {current_commute_minutes:.0f}분)",
             f"{rental.name} (편도 {rental.one_way_minutes:.0f}분)"]
-    palette = ["#2e86de", "#54a0ff", "#7ea8c4", "#b3c6d4", "#eb6e4b"]
+    palette = ["#2f80ed", "#5aa6ff", "#7fa7bf", "#b7c8d6", "#e76f51"]
     keys = ["월세", "고정월비용(관리비+생활비+교통비)", "보증금 이자(d×i÷12)",
             "이사비 연환산(M×CRF÷12)", "시간비용(τ/12×편도분)"]
     commute_map = {

@@ -41,7 +41,7 @@ def render(result: pd.DataFrame, assumptions: dict) -> None:
         st.info("자취 매물이 없어 결정 경계를 그릴 수 없습니다.")
         return
 
-    st.subheader("결정 경계 — 어떤 조건에서 결론이 뒤집히는가")
+    st.subheader("손익분기점 — 어떤 조건에서 결론이 뒤집히는가")
 
     names = rentals["대안"].tolist()
     chosen = st.selectbox("비교할 자취 매물", names, index=0,
