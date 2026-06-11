@@ -15,6 +15,22 @@ from model import Params, rental_from_v1_row
 from simulate import MCInputs, run_mc, tornado
 
 _BLUE, _ORANGE, _PURPLE = "#2e86de", "#eb6e4b", "#8d6bd6"
+_TEXT, _MUTED, _GRID = "#18212f", "#637083", "#d9e2ec"
+
+
+def _light_layout(fig: go.Figure) -> None:
+    fig.update_layout(
+        template="plotly_white",
+        font=dict(color=_TEXT),
+        title_font=dict(color=_TEXT),
+        legend=dict(font=dict(color=_TEXT)),
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
+    )
+    fig.update_xaxes(color=_MUTED, title_font=dict(color=_TEXT), tickfont=dict(color=_MUTED),
+                     gridcolor=_GRID, linecolor=_GRID, zerolinecolor=_GRID)
+    fig.update_yaxes(color=_MUTED, title_font=dict(color=_TEXT), tickfont=dict(color=_MUTED),
+                     gridcolor=_GRID, linecolor=_GRID, zerolinecolor=_GRID)
 
 
 def _params(assumptions: dict) -> Params:
@@ -104,7 +120,8 @@ def render(result: pd.DataFrame, assumptions: dict) -> None:
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
         margin=dict(l=10, r=10, t=70, b=10), height=380,
     )
-    st.plotly_chart(fig, use_container_width=True)
+    _light_layout(fig)
+    st.plotly_chart(fig, width="stretch", theme=None)
 
     # ── 토네이도: 어떤 입력이 결론을 가장 흔드는가
     rows = tornado(rental, mc, p)
@@ -127,7 +144,8 @@ def render(result: pd.DataFrame, assumptions: dict) -> None:
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=10, r=10, t=70, b=10), height=320, showlegend=False,
     )
-    st.plotly_chart(fig2, use_container_width=True)
+    _light_layout(fig2)
+    st.plotly_chart(fig2, width="stretch", theme=None)
     st.caption("막대가 보라색 0선을 가로지르는 입력은 그 하나만으로 결론을 "
                "뒤집을 수 있다는 뜻입니다. 가로지르지 않으면 결론은 그 입력에 견고합니다.")
 

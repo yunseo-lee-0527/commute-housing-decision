@@ -22,6 +22,36 @@ _COL_COMMUTE = "rgba(235, 110, 75, 0.18)"  # 통학 유리 영역
 _COL_LINE = "#8d6bd6"
 _COL_BAND = "rgba(141, 107, 214, 0.22)"
 _COL_POINT = "#f5b942"
+_TEXT = "#18212f"
+_MUTED = "#637083"
+_GRID = "#d9e2ec"
+
+
+def _light_layout(fig: go.Figure) -> None:
+    fig.update_layout(
+        template="plotly_white",
+        font=dict(color=_TEXT),
+        title_font=dict(color=_TEXT),
+        legend=dict(font=dict(color=_TEXT)),
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
+    )
+    fig.update_xaxes(
+        color=_MUTED,
+        title_font=dict(color=_TEXT),
+        tickfont=dict(color=_MUTED),
+        gridcolor=_GRID,
+        linecolor=_GRID,
+        zerolinecolor=_GRID,
+    )
+    fig.update_yaxes(
+        color=_MUTED,
+        title_font=dict(color=_TEXT),
+        tickfont=dict(color=_MUTED),
+        gridcolor=_GRID,
+        linecolor=_GRID,
+        zerolinecolor=_GRID,
+    )
 
 
 def build_boundary_figure(
@@ -163,6 +193,7 @@ def build_boundary_figure(
         margin=dict(l=10, r=10, t=110, b=10),
         height=520,
     )
+    _light_layout(fig)
     return fig
 
 
@@ -217,4 +248,5 @@ def build_breakdown_figure(
         margin=dict(l=10, r=10, t=90, b=10),
         height=460,
     )
+    _light_layout(fig)
     return fig

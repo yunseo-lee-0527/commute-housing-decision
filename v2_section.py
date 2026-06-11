@@ -59,11 +59,13 @@ def render(result: pd.DataFrame, assumptions: dict) -> None:
 
     st.plotly_chart(
         build_boundary_figure(rental, m_now, p),
-        use_container_width=True,
+        width="stretch",
+        theme=None,
     )
     st.plotly_chart(
         build_breakdown_figure(rental, m_now, p),
-        use_container_width=True,
+        width="stretch",
+        theme=None,
     )
 
     st.caption(

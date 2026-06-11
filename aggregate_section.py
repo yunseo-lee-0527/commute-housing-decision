@@ -23,6 +23,22 @@ from aggregate import (
 )
 
 _BLUE, _ORANGE, _PURPLE, _GRAY = "#2e86de", "#eb6e4b", "#8d6bd6", "#9aa3ad"
+_TEXT, _MUTED, _GRID = "#18212f", "#637083", "#d9e2ec"
+
+
+def _light_layout(fig: go.Figure) -> None:
+    fig.update_layout(
+        template="plotly_white",
+        font=dict(color=_TEXT),
+        title_font=dict(color=_TEXT),
+        legend=dict(font=dict(color=_TEXT)),
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
+    )
+    fig.update_xaxes(color=_MUTED, title_font=dict(color=_TEXT), tickfont=dict(color=_MUTED),
+                     gridcolor=_GRID, linecolor=_GRID, zerolinecolor=_GRID)
+    fig.update_yaxes(color=_MUTED, title_font=dict(color=_TEXT), tickfont=dict(color=_MUTED),
+                     gridcolor=_GRID, linecolor=_GRID, zerolinecolor=_GRID)
 
 
 def render(result: pd.DataFrame) -> None:
@@ -52,7 +68,7 @@ def render(result: pd.DataFrame) -> None:
                        "정의됩니다. 채점표: "
                        + " · ".join(f"{label} +{w:g}" for _, label, w in safety.RUBRIC))
             st.dataframe(safety.breakdown_table(checklist),
-                         hide_index=True, use_container_width=True)
+                         hide_index=True, width="stretch")
     else:
         work["안전객관"] = work["안전"]
 
@@ -67,7 +83,7 @@ def render(result: pd.DataFrame) -> None:
                 "주관보정": st.column_config.NumberColumn(min_value=-3.0, max_value=3.0,
                                                       step=0.5),
             },
-            hide_index=True, use_container_width=True,
+            hide_index=True, width="stretch",
         )
     adj = dict(zip(edit["대안"], edit["주관보정"]))
     work["안전최종"] = work.apply(
@@ -108,7 +124,7 @@ def render(result: pd.DataFrame) -> None:
             lambda row: ["color: #9aa3ad" if not row["통과"] else ""] * len(row),
             axis=1,
         ),
-        use_container_width=True, hide_index=True,
+        width="stretch", hide_index=True,
     )
     st.caption("탈락 대안은 지우지 않고 사유와 함께 회색으로 남깁니다 — "
                "모델이 왜 그렇게 판단했는지가 그대로 드러나도록.")
@@ -157,7 +173,8 @@ def render(result: pd.DataFrame) -> None:
         legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
         margin=dict(l=10, r=10, t=70, b=10), height=380,
     )
-    st.plotly_chart(fig, use_container_width=True)
+    _light_layout(fig)
+    st.plotly_chart(fig, width="stretch", theme=None)
 
     # ── 3단: Pareto frontier (보정월비용 × 안전최종)
     passing = rentals_w[rentals_w["통과"]]
@@ -189,7 +206,8 @@ def render(result: pd.DataFrame) -> None:
             legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
             margin=dict(l=10, r=10, t=70, b=10), height=400,
         )
-        st.plotly_chart(fig2, use_container_width=True)
+        _light_layout(fig2)
+        st.plotly_chart(fig2, width="stretch", theme=None)
         st.caption("frontier 위의 대안들끼리는 모델이 우열을 가리지 않습니다 — "
                    "'더 싸지만 덜 안전' vs '더 비싸지만 더 안전'의 선택은 "
                    "정량화할 수 없는 가치판단이므로 사용자에게 돌려줍니다.")
