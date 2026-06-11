@@ -891,6 +891,9 @@ st.dataframe(
 st.subheader("비용 비교")
 st.bar_chart(result.set_index("대안")[["월현금지출", "월시간손실비용", "월실질비용"]])
 
+import v2_section
+v2_section.render(result, ASSUMPTIONS)
+
 st.subheader("민감도 분석")
 sensitivity = sensitivity_analysis(selected_home, budget, decision_weights)
 summary = (
