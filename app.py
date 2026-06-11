@@ -583,46 +583,104 @@ def render_verdict(best: pd.Series) -> None:
     )
 
 
-def build_cost_comparison_chart(df: pd.DataFrame) -> go.Figure:
+def shorten_label(value: object, limit: int = 22) -> str:
+    text = str(value)
+    return text if len(text) <= limit else f"{text[:limit - 1]}…"
+
+
+def normalize_convenience_label(value: object) -> str:
+    if value is None or pd.isna(value):
+        return "편의 정보 없음"
+    label = str(value).strip()
+    return label if label else "편의 정보 없음"
+
+
+def convenience_tags(value: object) -> list[str]:
+    label = normalize_convenience_label(value)
+    if label == "편의 정보 없음":
+        return []
+    return [part.strip() for part in label.split(";") if part.strip()]
+
+
+def build_cost_comparison_chart(df: pd.DataFrame, top_n: int = 10) -> go.Figure:
     fig = go.Figure()
-    chart_df = df.sort_values("월실질비용", ascending=True)
-    traces = [
-        ("월 현금지출", "월현금지출", "#ff4d1f"),
-        ("월 시간손실", "월시간손실비용", "#8b5cf6"),
-        ("월 실질비용", "월실질비용", "#22c55e"),
+    chart_df = df.sort_values("월실질비용", ascending=True).head(top_n).copy()
+    chart_df["순위"] = range(1, len(chart_df) + 1)
+    chart_df["표시대안"] = chart_df.apply(
+        lambda row: f"{int(row['순위'])}. {shorten_label(row['대안'])}",
+        axis=1,
+    )
+    chart_df = chart_df.iloc[::-1]
+    palette = [CHART_ORANGE, CHART_ORANGE_2, CHART_GOLD, CHART_PURPLE, CHART_BLUE]
+    colors = [
+        CHART_ORANGE if row["유형"] == "통학" else palette[i % len(palette)]
+        for i, (_, row) in enumerate(chart_df.iterrows())
     ]
-    for label, column, color in traces:
-        fig.add_trace(
-            go.Bar(
-                x=chart_df["대안"],
-                y=chart_df[column],
-                name=label,
-                marker_color=color,
-                hovertemplate="%{x}<br>" + label + " %{y:.0f}만원<extra></extra>",
-            )
+
+    fig.add_trace(
+        go.Bar(
+            x=chart_df["월실질비용"],
+            y=chart_df["표시대안"],
+            orientation="h",
+            marker_color=colors,
+            marker_line=dict(color="#ffffff", width=1),
+            text=[f"{value:.0f}만원" for value in chart_df["월실질비용"]],
+            textposition="outside",
+            textfont=dict(color=CHART_TEXT, size=11),
+            customdata=chart_df[
+                ["대안", "월현금지출", "월시간손실비용", "편도시간", "AEC", "유형", "편의성_라벨"]
+            ],
+            hovertemplate=(
+                "<b>%{customdata[0]}</b><br>"
+                "유형 %{customdata[5]}<br>"
+                "편의성 %{customdata[6]}<br>"
+                "월 실질비용 %{x:.0f}만원<br>"
+                "월 현금지출 %{customdata[1]:.0f}만원<br>"
+                "월 시간손실 %{customdata[2]:.0f}만원<br>"
+                "편도시간 %{customdata[3]:.0f}분<br>"
+                "AEC %{customdata[4]:.0f}만원/년"
+                "<extra></extra>"
+            ),
         )
+    )
     fig.update_layout(
         template="plotly_white",
-        barmode="group",
-        height=420,
-        margin=dict(l=10, r=10, t=46, b=80),
-        title=dict(text="월 비용 구조", font=dict(size=15, color="#18212f")),
+        height=max(340, 30 * len(chart_df) + 96),
+        margin=dict(l=18, r=64, t=58, b=30),
+        title=dict(
+            text=f"월 실질비용 Top {len(chart_df)}",
+            font=dict(size=15, color=CHART_TEXT),
+            x=0,
+        ),
         font=dict(color="#18212f"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+        showlegend=False,
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
     )
-    fig.update_xaxes(tickangle=-18, tickfont=dict(color="#637083"), gridcolor="#d8e2ee")
-    fig.update_yaxes(title="만원/월", tickfont=dict(color="#637083"), gridcolor="#d8e2ee")
+    fig.update_xaxes(
+        title="만원/월",
+        rangemode="tozero",
+        tickfont=dict(color=CHART_MUTED),
+        gridcolor=CHART_GRID,
+        linecolor="#d8e2ee",
+        zerolinecolor="#d8e2ee",
+    )
+    fig.update_yaxes(
+        title="",
+        tickfont=dict(color=CHART_MUTED, size=11),
+        gridcolor="#ffffff",
+        linecolor="#ffffff",
+        automargin=True,
+    )
     return fig
 
 
-CHART_ORANGE = "#ff4d1f"
-CHART_ORANGE_2 = "#ff7a2f"
-CHART_GOLD = "#ffbd59"
-CHART_GREEN = "#22c55e"
-CHART_PURPLE = "#8b5cf6"
-CHART_BLUE = "#1495ef"
+CHART_ORANGE = "#e8785a"
+CHART_ORANGE_2 = "#e99a62"
+CHART_GOLD = "#dfb65f"
+CHART_GREEN = "#55b77a"
+CHART_PURPLE = "#8a73d6"
+CHART_BLUE = "#4c9ed9"
 CHART_GRID = "#edf1f5"
 CHART_TEXT = "#18212f"
 CHART_MUTED = "#637083"
@@ -929,9 +987,12 @@ def render_economic_detail(
 
 
 def render_table_detail(result: pd.DataFrame, best: pd.Series) -> None:
+    table_result = result.copy()
+    table_result["편의성 참고"] = table_result["편의성_라벨"].apply(lambda value: shorten_label(value, 34))
     summary_cols = [
         "대안",
         "유형",
+        "편의성 참고",
         "경제성판정",
         "월현금지출",
         "월시간손실비용",
@@ -944,6 +1005,7 @@ def render_table_detail(result: pd.DataFrame, best: pd.Series) -> None:
         "대안",
         "유형",
         "경제성판정",
+        "편의성_라벨",
         "월현금지출",
         "월시간손실비용",
         "월실질비용",
@@ -995,15 +1057,16 @@ def render_table_detail(result: pd.DataFrame, best: pd.Series) -> None:
         return [""] * len(row)
 
     st.subheader("대안별 비용 비교")
+    st.caption("그래프는 월 실질비용이 낮은 상위 10개만 요약합니다. 전체 후보와 세부 계산값은 아래 표에서 확인할 수 있습니다.")
     st.plotly_chart(build_cost_comparison_chart(result), width="stretch", theme=None)
     st.dataframe(
-        result[summary_cols].style.apply(highlight_best, axis=1).format(number_formats),
+        table_result[summary_cols].style.apply(highlight_best, axis=1).format(number_formats),
         width="stretch",
         hide_index=True,
     )
     with st.expander("상세 계산 항목 보기"):
         st.dataframe(
-            result[display_cols].style.apply(highlight_best, axis=1).format(number_formats),
+            table_result[display_cols].style.apply(highlight_best, axis=1).format(number_formats),
             width="stretch",
             hide_index=True,
         )
@@ -1026,7 +1089,7 @@ ASSUMPTIONS = {
     "analysis_years": 4,
     "annual_interest_rate": 0.05,
     "school_days_per_month": 22,
-    "hourly_time_value_won": 25000,
+    "hourly_time_value_won": 20000,
     "moving_cost": 60,
     "commute_base_transport": 8,
     "living_food": 32,
@@ -1054,6 +1117,7 @@ def init_state() -> None:
         "page": "input",
         "decision_weights": None,
         "results_nav_tab": "Overview",
+        "safety_pct_threshold": 0,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -1482,8 +1546,11 @@ def build_alternatives(
     hourly_time_value_won: float,
     weights: dict,
     rent_delta: float = 0,
+    safety_pct_min: float = 0,
 ) -> pd.DataFrame:
     rentals = read_rentals()
+    if safety_pct_min > 0 and "안전최종" in rentals.columns:
+        rentals = rentals[rentals["안전최종"] >= safety_pct_min].reset_index(drop=True)
     transit_route = gtfs_transit_route(home, SCHOOL)
     if transit_route:
         commute_distance = haversine_km(home["lat"], home["lng"], SCHOOL["lat"], SCHOOL["lng"])
@@ -1521,6 +1588,7 @@ def build_alternatives(
             "시간출처": route_source,
             "택시비참고": taxi_fare_won,
             "편의도": 4,
+            "편의성_라벨": "자택 생활 기반",
             "안전": 8,
             **economic_metrics(0, 0, commute_monthly, commute_minutes, rate, hourly_time_value_won),
         }
@@ -1559,6 +1627,7 @@ def build_alternatives(
                 "시간출처": "학교까지 거리 기반 추정",
                 "택시비참고": None,
                 "편의도": float(rental["convenience"]),
+                "편의성_라벨": normalize_convenience_label(rental.get("편의성_라벨")),
                 "안전": float(rental["safety"]),
                 **economic_metrics(
                     float(rental["deposit"]),
@@ -1682,9 +1751,9 @@ if st.session_state.page == "input":
         unsafe_allow_html=True,
     )
 
-    control_col, map_col = st.columns([0.95, 1.35], gap="large")
+    left_col, _vcol, right_col = st.columns([1.38, 0.015, 0.9], gap="small")
 
-    with control_col:
+    with left_col:
         st.markdown('<div class="panel-title">1. 현재 거주지</div>', unsafe_allow_html=True)
         query = st.text_input(
             "주소 또는 장소명",
@@ -1751,39 +1820,86 @@ if st.session_state.page == "input":
             if not GTFS_CACHE.exists():
                 st.caption("대중교통 네트워크 최단시간을 쓰려면 터미널에서 `python build_gtfs_cache.py`를 한 번 실행하세요.")
 
-        st.markdown('<div class="panel-title">2. 평가 기준</div>', unsafe_allow_html=True)
-        preference_preset = st.selectbox("성향 프리셋", list(AHP_PRESETS.keys()), index=1)
-        preset = AHP_PRESETS[preference_preset]
+        st.markdown('<div class="panel-title" style="margin-top:.9rem">2. 지도 확인</div>', unsafe_allow_html=True)
+        render_location_map(st.session_state.selected_home)
 
-        w1, w2 = st.columns(2)
-        with w1:
-            economic_weight = st.slider("비용", 1, 9, max(1, round(preset["economic"] * 10)))
-            convenience_weight = st.slider("편의성", 1, 9, max(1, round(preset["convenience"] * 10)))
-        with w2:
-            time_weight = st.slider("시간", 1, 9, max(1, round(preset["time"] * 10)))
-            safety_weight = st.slider("안전", 1, 9, max(1, round(preset["safety"] * 10)))
-
-        decision_weights = normalize_weights(
-            {
-                "economic": economic_weight,
-                "time": time_weight,
-                "convenience": convenience_weight,
-                "safety": safety_weight,
-            }
-        )
+    with _vcol:
         st.markdown(
-            '<div class="weight-row">'
-            f'<span class="weight-chip">비용 {decision_weights["economic"]:.0%}</span>'
-            f'<span class="weight-chip">시간 {decision_weights["time"]:.0%}</span>'
-            f'<span class="weight-chip">편의 {decision_weights["convenience"]:.0%}</span>'
-            f'<span class="weight-chip">안전 {decision_weights["safety"]:.0%}</span>'
-            '</div>',
+            '<div style="border-left:1px solid #d8e2ee;min-height:700px;'
+            'margin:0 auto;width:1px;margin-top:.5rem;"></div>',
             unsafe_allow_html=True,
         )
 
-    with map_col:
-        st.markdown('<div class="panel-title">3. 지도 확인</div>', unsafe_allow_html=True)
-        render_location_map(st.session_state.selected_home)
+    with right_col:
+        decision_weights = AHP_PRESETS["균형형"]
+
+        st.markdown('<div class="panel-title">3. 안전 필터</div>', unsafe_allow_html=True)
+        _rentals_hist = read_rentals()
+        if "안전최종" in _rentals_hist.columns:
+            _svals = _rentals_hist["안전최종"].dropna()
+            _s_min = round(float(_svals.min()), 1)
+            _s_max = round(float(_svals.max()), 1)
+            _prev = float(st.session_state.get("safety_pct_threshold", 0))
+            _init = max(_s_min, _prev) if _prev > _s_min else _s_min
+            safety_threshold = st.slider(
+                "안전 최솟값 — 이 점수 미만 매물 제외",
+                min_value=_s_min,
+                max_value=_s_max,
+                value=round(_init, 1),
+                step=0.1,
+                format="%.1f점",
+                help="슬라이더를 오른쪽으로 옮길수록 안전도 낮은 매물이 분석에서 제외됩니다. "
+                     "왼쪽 끝(최솟값)이면 전체 매물이 포함됩니다.",
+            )
+            _fig_hist = go.Figure()
+            _fig_hist.add_trace(go.Histogram(
+                x=_svals.values, nbinsx=20,
+                marker_color="#8b5cf6", opacity=0.75, name="매물 분포",
+                hovertemplate="안전 점수 %{x:.2f}<br>%{y}개 매물<extra></extra>",
+            ))
+            if safety_threshold > _s_min:
+                _fig_hist.add_vrect(
+                    x0=_s_min - 0.5, x1=safety_threshold,
+                    fillcolor="#ff4d1f", opacity=0.10, line_width=0,
+                )
+            _fig_hist.add_vline(
+                x=safety_threshold, line_dash="dash",
+                line_color="#ff4d1f", line_width=2,
+                annotation_text=f"기준 {safety_threshold:.1f}",
+                annotation_position="top right",
+                annotation_font_color="#ff4d1f",
+                annotation_font_size=10,
+            )
+            _fig_hist.update_layout(
+                height=180,
+                margin=dict(l=0, r=0, t=26, b=26),
+                showlegend=False,
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                xaxis=dict(
+                    title="안전 점수 (0–10)",
+                    tickfont=dict(size=9, color="#637083"),
+                    gridcolor="#edf1f5", linecolor="#d8e2ee", zerolinecolor="#d8e2ee",
+                ),
+                yaxis=dict(
+                    title="매물 수",
+                    tickfont=dict(size=9, color="#637083"),
+                    gridcolor="#edf1f5", linecolor="#d8e2ee",
+                ),
+                font=dict(color="#18212f", size=9),
+            )
+            st.plotly_chart(_fig_hist, width="stretch", theme=None,
+                            key="safety_hist_input", config={"displayModeBar": False})
+            _n_incl = int((_svals >= safety_threshold).sum())
+            _n_excl = len(_svals) - _n_incl
+            if safety_threshold <= _s_min:
+                st.caption(f"필터 없음 — 전체 {len(_svals)}개 매물 포함")
+            else:
+                st.caption(f"{safety_threshold:.1f}점 미만 {_n_excl}개 제외 · {_n_incl}개 포함")
+        else:
+            safety_threshold = 0.0
+            st.caption("안전최종 컬럼이 없어 안전 필터를 사용할 수 없습니다.")
+
 
     selected_home = st.session_state.selected_home
     if not selected_home:
@@ -1796,6 +1912,7 @@ if st.session_state.page == "input":
 
     if st.button("분석 시작", width="stretch", type="primary"):
         st.session_state.decision_weights = decision_weights
+        st.session_state.safety_pct_threshold = safety_threshold
         st.session_state.page = "results"
         st.rerun()
 
@@ -1813,10 +1930,24 @@ elif st.session_state.page == "results":
     # ── 데이터 계산 ───────────────────────────────────────────────────────────
     rate = ASSUMPTIONS["annual_interest_rate"]
     time_value = ASSUMPTIONS["hourly_time_value_won"]
-    result = build_alternatives(selected_home, rate, time_value, decision_weights)
+    safety_pct_min = float(st.session_state.get("safety_pct_threshold", 0))
+    result = build_alternatives(selected_home, rate, time_value, decision_weights,
+                                safety_pct_min=safety_pct_min)
+    rental_rows = result[result["유형"] == "자취"]
+    if rental_rows.empty:
+        render_callout(
+            "warning",
+            "안전 필터 적용 후 자취 매물 없음",
+            f"안전 하위 {safety_pct_min:.0f}% 필터 적용 결과 조건을 만족하는 자취 매물이 없습니다. "
+            "입력 화면으로 돌아가 필터 값을 낮춰주세요.",
+        )
+        if st.button("← 다시 입력하기", key="back_empty"):
+            st.session_state.page = "input"
+            st.rerun()
+        st.stop()
     best = result.iloc[0]
     commute_row = result[result["유형"] == "통학"].iloc[0]
-    best_economic_rental = result[result["유형"] == "자취"].sort_values("AEC").iloc[0]
+    best_economic_rental = rental_rows.sort_values("AEC").iloc[0]
 
     aec_gap = float(best_economic_rental["AEC"] - commute_row["AEC"])
     break_even_value = best_economic_rental["손익분기월세"]
@@ -1857,6 +1988,26 @@ elif st.session_state.page == "results":
         .kpi-unit { font-size: .88rem; font-weight: 500; color: #637083; }
         .kpi-sub { font-size: .78rem; margin-top: .22rem; }
         .kpi-up   { color: #16a34a; } .kpi-down { color: #c2413a; } .kpi-gray { color: #637083; }
+        .conv-note {
+            display: flex; align-items: flex-start; gap: .75rem; flex-wrap: wrap;
+            border: 1px solid #e3e9f1; border-left: 4px solid #e8785a;
+            border-radius: 9px; background: #fffaf7;
+            padding: .72rem .9rem; margin: -.35rem 0 1.05rem;
+        }
+        .conv-note__label {
+            color: #9b4a2e; font-size: .74rem; font-weight: 800;
+            white-space: nowrap; padding-top: .16rem;
+        }
+        .conv-note__name {
+            color: #18212f; font-size: .86rem; font-weight: 760;
+            margin-right: .2rem;
+        }
+        .conv-tags { display: flex; gap: .36rem; flex-wrap: wrap; flex: 1; }
+        .conv-tag {
+            border: 1px solid #ecd2c5; border-radius: 999px;
+            background: #fff; color: #5f6b7a;
+            padding: .18rem .48rem; font-size: .74rem; font-weight: 650;
+        }
         /* Overview chart cards */
         .ov-card-head {
             display: flex; justify-content: space-between; align-items: flex-start;
@@ -1910,10 +2061,19 @@ elif st.session_state.page == "results":
     # ── KPI strip (항상 표시) ─────────────────────────────────────────────────
     rec_type = str(best["유형"])
     rec_label = html.escape("통학" if rec_type == "통학" else str(best["대안"]))
+    rec_convenience = normalize_convenience_label(best.get("편의성_라벨"))
+    rec_sub = rec_type if rec_type == "통학" else f"{rec_type} · {shorten_label(rec_convenience, 30)}"
     aec_lbl = "자취가 더 비쌈" if aec_gap > 0 else "자취가 더 유리"
     aec_cls = "kpi-down" if aec_gap > 0 else "kpi-up"
     mc_lbl = "자취 우세" if mc_pct > 50 else "통학 우세"
     mc_cls = "kpi-up" if mc_pct > 50 else "kpi-down"
+
+    rental_count = len(result[result["유형"] == "자취"])
+    filter_badge = (
+        f"안전 {safety_pct_min:.1f}점 이상 · {rental_count}개"
+        if safety_pct_min > 0
+        else f"전체 매물 · {rental_count}개"
+    )
 
     st.markdown(
         f"""
@@ -1921,7 +2081,7 @@ elif st.session_state.page == "results":
           <div class="kpi-cell">
             <div class="kpi-lbl">추천 대안</div>
             <div class="kpi-val" style="font-size:1.2rem">{rec_label}</div>
-            <div class="kpi-sub kpi-gray">{rec_type}</div>
+            <div class="kpi-sub kpi-gray">{html.escape(rec_sub)}</div>
           </div>
           <div class="kpi-cell">
             <div class="kpi-lbl">AEC 차이 (자취 − 통학)</div>
@@ -1936,12 +2096,32 @@ elif st.session_state.page == "results":
           <div class="kpi-cell">
             <div class="kpi-lbl">자취 유리 확률</div>
             <div class="kpi-val">{mc_pct:.0f}<span class="kpi-unit"> %</span></div>
-            <div class="kpi-sub {mc_cls}">{mc_lbl}</div>
+            <div class="kpi-sub {mc_cls}">{mc_lbl} · {html.escape(filter_badge)}</div>
           </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+    if rec_type != "통학":
+        tags = convenience_tags(rec_convenience)
+        if tags:
+            tag_html = "".join(
+                f'<span class="conv-tag">{html.escape(tag)}</span>'
+                for tag in tags
+            )
+        else:
+            tag_html = '<span class="conv-tag">편의 정보 없음</span>'
+        st.markdown(
+            f"""
+            <div class="conv-note">
+              <div class="conv-note__label">편의성 참고</div>
+              <div class="conv-note__name">{rec_label}</div>
+              <div class="conv-tags">{tag_html}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     # ── 탭별 콘텐츠 ───────────────────────────────────────────────────────────
     def _chart_card(title: str, badge: str, metric: str, sub: str,
