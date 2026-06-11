@@ -1,0 +1,11 @@
+﻿sido_npa,address,name,x,y,objectid,facility_group,telephone,type,center_lon,center_lat,geometry_wkt,source_dataset
+서울특별시경찰청,서울특별시 관악구 관악로5길 33,서울관악경찰서,126.95187,37.47423378,19,police_station,,,126.95187000103587,37.47423378433218,POINT (126.95187 37.474234),Esri Korea KR_PoliceStation FeatureServer
+,서울특별시 관악구 남부순환로191길 12,서울관악당곡지구대,126.93436443,37.48600682,185,police_substation,02-870-0810,지구대,126.93436442809276,37.48600681868452,POINT (126.934364 37.486007),Esri Korea KR_PoliceStation FeatureServer
+,서울특별시 관악구 봉천로 540,서울관악낙성대지구대,126.95759569,37.47832695,186,police_substation,02-870-0820,지구대,126.95759568627555,37.47832694545219,POINT (126.957596 37.478327),Esri Korea KR_PoliceStation FeatureServer
+,서울특별시 관악구 은천로 93,서울관악구암지구대,126.94524737,37.48728082,187,police_substation,02-870-0850,지구대,126.9452473729221,37.48728082458031,POINT (126.945247 37.487281),Esri Korea KR_PoliceStation FeatureServer
+,서울특별시 관악구 신림로 178,서울관악관악산지구대,126.93526314,37.47385941,188,police_substation,02-870-0840,지구대,126.9352631440195,37.47385941152415,POINT (126.935263 37.473859),Esri Korea KR_PoliceStation FeatureServer
+,서울특별시 관악구 난곡로64가길 31,서울관악미성파출소,126.91561044,37.47992422,189,police_substation,02-870-0870,파출소,126.9156104437064,37.47992422227379,POINT (126.91561 37.479924),Esri Korea KR_PoliceStation FeatureServer
+,서울특별시 관악구 난곡로 64,서울관악난우파출소,126.91924992,37.46111823,190,police_substation,02-870-0860,파출소,126.91924991577189,37.461118230705026,POINT (126.91925 37.461118),Esri Korea KR_PoliceStation FeatureServer
+,서울특별시 관악구 남부순환로188길 12,서울관악신림지구대,126.93331733,37.48401644,191,police_substation,02-870-0830,지구대,126.93331732619042,37.48401644398079,POINT (126.933317 37.484016),Esri Korea KR_PoliceStation FeatureServer
+,서울특별시 관악구 신사로 106,서울관악신사지구대,126.91420506,37.4872985,192,police_substation,02-870-0880,지구대,126.91420506209104,37.487298500869294,POINT (126.914205 37.487299),Esri Korea KR_PoliceStation FeatureServer
+,서울특별시 관악구 남현1가길 29,서울관악남현파출소,126.97787526,37.47468781,193,police_substation,02-870-0890,파출소,126.97787526383232,37.4746878148952,POINT (126.977875 37.474688),Esri Korea KR_PoliceStation FeatureServer

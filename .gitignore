@@ -24,3 +24,6 @@ Thumbs.db
 
 # Optional generated artifacts
 *.log
+
+# Safety data: keep raw sources + processed outputs, drop regenerable intermediate
+data/safety_gwanak/extracted/

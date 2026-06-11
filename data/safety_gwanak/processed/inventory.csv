@@ -1,0 +1,8 @@
+﻿dataset,rows,source,csv,geojson
+gwanak_boundary_osm,1,OpenStreetMap Nominatim boundary,data\safety_gwanak\processed\gwanak_boundary_osm.csv,data\safety_gwanak\processed\gwanak_boundary_osm.geojson
+gwanak_safe_facilities,686,Seoul Safe Route Facilities SHP,data\safety_gwanak\processed\gwanak_safe_facilities.csv,data\safety_gwanak\processed\gwanak_safe_facilities.geojson
+gwanak_safe_route_links,19,Seoul Safe Route Links SHP,data\safety_gwanak\processed\gwanak_safe_route_links.csv,data\safety_gwanak\processed\gwanak_safe_route_links.geojson
+gwanak_safe_services,27,Seoul Safe Route Services SHP,data\safety_gwanak\processed\gwanak_safe_services.csv,data\safety_gwanak\processed\gwanak_safe_services.geojson
+gwanak_streetlights,95,Seoul Streetlight CSV,data\safety_gwanak\processed\gwanak_streetlights.csv,data\safety_gwanak\processed\gwanak_streetlights.geojson
+gwanak_smartpoles,7,Gwanak Smartpole CSV,data\safety_gwanak\processed\gwanak_smartpoles.csv,data\safety_gwanak\processed\gwanak_smartpoles.geojson
+gwanak_police_facilities,10,Esri Korea KR_PoliceStation FeatureServer,data\safety_gwanak\processed\gwanak_police_facilities.csv,data\safety_gwanak\processed\gwanak_police_facilities.geojson
