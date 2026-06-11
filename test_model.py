@@ -93,9 +93,9 @@ def _minutes(dist):
 
 
 def _load_rentals():
-    csv_path = Path(__file__).parent / "rentals_dummy.csv"
-    if not csv_path.exists():  # v2 폴더 단독 실행 대비
-        csv_path = Path(__file__).parent.parent / "rentals_dummy.csv"
+    csv_path = Path(__file__).parent / "snu_area_rentals_scored.csv"
+    if not csv_path.exists():  # 점수 미부여 시 크롤/생성 CSV로 폴백
+        csv_path = Path(__file__).parent / "snu_area_rentals_crawled.csv"
     out = []
     for r in csv.DictReader(open(csv_path, encoding="utf-8")):
         dist = _haversine_km(float(r["lat"]), float(r["lng"]), *SCHOOL)

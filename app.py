@@ -1010,7 +1010,8 @@ def render_table_detail(result: pd.DataFrame, best: pd.Series) -> None:
 
 
 BASE_DIR = Path(__file__).parent
-RENTAL_CSV = BASE_DIR / "rentals_dummy.csv"
+SCORED_RENTAL_CSV = BASE_DIR / "snu_area_rentals_scored.csv"
+RAW_RENTAL_CSV = BASE_DIR / "snu_area_rentals_crawled.csv"
 GTFS_CACHE = BASE_DIR / "gtfs_seoul_cache.pkl"
 DEFAULT_KAKAO_REST_API_KEY = ""
 
@@ -1449,10 +1450,23 @@ def score_higher_is_better(value: float, low: float, high: float) -> float:
 
 
 def read_rentals() -> pd.DataFrame:
-    if not RENTAL_CSV.exists():
-        st.error("rentals_dummy.csv 파일이 없습니다. 같은 폴더에 매물 CSV를 넣어주세요.")
-        st.stop()
-    return pd.read_csv(RENTAL_CSV)
+    if SCORED_RENTAL_CSV.exists():
+        df = pd.read_csv(SCORED_RENTAL_CSV)
+        required = {"name", "lat", "lng", "deposit", "monthly_rent", "maintenance_fee", "monthly_transport", "convenience", "safety"}
+        if not df.empty and required.issubset(df.columns):
+            return df
+
+    if RAW_RENTAL_CSV.exists():
+        st.error(
+            "크롤링 CSV는 있지만 안전도 점수가 붙은 CSV가 없습니다. "
+            "`python score_rental_safety.py --input snu_area_rentals_crawled.csv --output snu_area_rentals_scored.csv`를 먼저 실행해주세요."
+        )
+    else:
+        st.error(
+            "매물 CSV가 없습니다. `python generate_rentals.py`로 매물 데이터를 만든 뒤 "
+            "`python score_rental_safety.py`로 안전도 점수를 붙여 snu_area_rentals_scored.csv를 생성해주세요."
+        )
+    st.stop()
 
 
 def normalize_weights(weights: dict) -> dict:
