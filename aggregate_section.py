@@ -12,6 +12,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+import safety
 from aggregate import (
     ConstraintSet,
     apply_wtp,
@@ -38,29 +39,66 @@ def render(result: pd.DataFrame) -> None:
                           help="예: '가장 편한 집 대비 편의가 1점 낮은 불편을 "
                                "월 몇 만원으로 보상받겠는가'에 대한 본인의 답")
 
+    # ── 안전 점수의 정의: 객관 체크리스트에서 유도 (없으면 기존 숫자로 폴백)
+    work = result.copy()
+    checklist = safety.load_checklist()
+    if checklist is not None:
+        derived = safety.derived_scores(checklist)
+        work["안전객관"] = work["대안"].map(derived).fillna(work["안전"])
+        st.caption(f"커트라인 {min_safety:.1f}점의 의미(예시) ≈ "
+                   f"{safety.describe_cutoff(min_safety)}")
+        with st.expander("안전 점수의 정의 — 객관 체크리스트 (항목별 O/X)"):
+            st.caption("점수는 임의의 숫자가 아니라 사실 확인 가능한 항목의 합으로 "
+                       "정의됩니다. 채점표: "
+                       + " · ".join(f"{label} +{w:g}" for _, label, w in safety.RUBRIC))
+            st.dataframe(safety.breakdown_table(checklist),
+                         hide_index=True, use_container_width=True)
+    else:
+        work["안전객관"] = work["안전"]
+
     # ── 주관 보정: 객관 점수와 분리해 투명하게 표시
-    rentals = result[result["유형"] != "통학"].copy()
+    rentals = work[work["유형"] != "통학"]
     with st.expander("안전 점수 주관 보정 (직접 둘러본 체감 반영, ±3점)"):
         edit = st.data_editor(
-            rentals[["대안", "안전"]].assign(주관보정=0.0),
+            rentals[["대안", "안전객관"]].assign(주관보정=0.0),
             column_config={
                 "대안": st.column_config.TextColumn(disabled=True),
-                "안전": st.column_config.NumberColumn("안전(객관)", disabled=True),
+                "안전객관": st.column_config.NumberColumn("안전(객관)", disabled=True),
                 "주관보정": st.column_config.NumberColumn(min_value=-3.0, max_value=3.0,
                                                       step=0.5),
             },
             hide_index=True, use_container_width=True,
         )
     adj = dict(zip(edit["대안"], edit["주관보정"]))
-    work = result.copy()
     work["안전최종"] = work.apply(
-        lambda r: r["안전"] + adj.get(r["대안"], 0.0), axis=1
+        lambda r: r["안전객관"] + adj.get(r["대안"], 0.0), axis=1
     ).clip(0, 10)
 
     # ── 2단: WTP 환산 → 1단: 제약 평가
     work = apply_wtp(work, wtp)
     cons = ConstraintSet(budget_monthly=float(budget), min_safety=float(min_safety))
     work = evaluate_constraints(work, cons, safety_col="안전최종")
+
+    # ── 실시간 피드백: 커트라인의 영향력을 슬라이더 자리에서 바로 체감하도록
+    r_all = work[work["유형"] != "통학"]
+    pass_now = r_all[r_all["안전최종"] >= min_safety]
+    pass_lower = r_all[r_all["안전최종"] >= min_safety - 0.5]
+    extra = len(pass_lower) - len(pass_now)
+    if pass_now.empty:
+        msg = (f"커트라인 **{min_safety:.1f}** → 자취 {len(r_all)}곳 중 "
+               f"**0곳 통과** (안전 기준만 적용). ")
+        msg += (f"0.5만 낮추면 **{extra}곳**이 들어옵니다."
+                if extra > 0 else
+                "0.5 낮춰도 후보가 없습니다 — 아래 완화 제안을 참고하세요.")
+        st.error(msg)
+    else:
+        msg = (f"커트라인 **{min_safety:.1f}** → 자취 {len(r_all)}곳 중 "
+               f"**{len(pass_now)}곳 통과** (안전 기준만 적용) · "
+               f"통과 후보 최저 보정월비용 **{pass_now['보정월비용'].min():.0f}만원**")
+        if extra > 0:
+            msg += (f" · 0.5 낮추면 **+{extra}곳** "
+                    f"(최저 {pass_lower['보정월비용'].min():.0f}만원)")
+        st.info(msg)
 
     show = work[["대안", "유형", "월현금지출", "편의환산", "보정월비용",
                  "안전최종", "통과", "탈락사유"]].sort_values(
@@ -79,6 +117,21 @@ def render(result: pd.DataFrame) -> None:
     if hints:
         st.warning("현재 제약을 모두 만족하는 자취 후보가 없습니다.\n\n" +
                    "\n".join(f"- {h}" for h in hints))
+
+    # ── 최종 추천: 제약으로 거르고 WTP로 환산하면 비교 축은 '보정월비용' 하나.
+    #    기준이 하나이므로 1등도 하나 — 경제성/종합점수 분열이 원천적으로 불가능.
+    survivors = work[work["통과"]].sort_values("보정월비용")
+    if not survivors.empty:
+        final = survivors.iloc[0]
+        msg = (f"**무형가치 반영 최종 추천: {final['대안']} ({final['유형']})** — "
+               f"보정월비용 {final['보정월비용']:.0f}만원/월")
+        if len(survivors) >= 2:
+            gap = survivors.iloc[1]["보정월비용"] - final["보정월비용"]
+            msg += f" (2위 '{survivors.iloc[1]['대안']}' 대비 월 {gap:.0f}만원 저렴)"
+        st.success(msg)
+        st.caption("안전·예산은 자격 요건으로 걸렀고 편의는 WTP로 비용에 환산했으므로, "
+                   "남은 비교 기준은 보정월비용 하나입니다. 이 추천이 마음에 들지 않으면 "
+                   "아래 Pareto frontier에서 '더 비싸지만 더 안전한' 대안을 직접 고를 수 있습니다.")
 
     # ── 커트라인 What-if: 절벽 효과를 숨기지 않고 보여주기
     rentals_w = work[work["유형"] != "통학"]

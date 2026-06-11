@@ -50,11 +50,11 @@ def render(result: pd.DataFrame, assumptions: dict) -> None:
 
     st.markdown("**입력 범위** — 점이 아니라 구간으로")
     c1, c2, c3 = st.columns(3)
-    m_lo = c1.number_input("통학시간 최소 (편도분)", 5.0, 300.0, max(5.0, m_mode * 0.85), 1.0)
-    m_md = c2.number_input("통학시간 보통 (편도분)", 5.0, 300.0, m_mode, 1.0)
-    m_hi = c3.number_input("통학시간 최악 (편도분)", 5.0, 400.0, m_mode * 1.5, 1.0,
-                           help="환승 실패, 연착 등을 포함한 현실적 최악값. "
-                                "최악 꼬리가 길수록 통학의 변동성 비용이 커집니다.")
+    m_lo = c1.number_input("통학시간 최소 (편도분)", 5.0, 999.0, max(5.0, m_mode * 0.85), 1.0)
+    m_md = c2.number_input("통학시간 보통 (편도분)", 5.0, 999.0, m_mode, 1.0)
+    m_hi = c3.number_input("통학시간 최악 (편도분)", 5.0, 999.0,
+                            min(m_mode * 1.5, 999.0), 1.0,
+                            help="환승 실패, 연착 등을 포함한 현실적 최악값.")
     c4, c5, c6 = st.columns(3)
     w0 = float(assumptions["hourly_time_value_won"])
     w_lo = c4.number_input("시간가치 하한 (원/시간)", 1000.0, 100000.0, w0, 500.0)

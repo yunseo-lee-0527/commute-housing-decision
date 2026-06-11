@@ -774,8 +774,10 @@ if not selected_home:
     st.info("먼저 주소를 검색하거나 지도에서 현 거주지를 클릭하세요.")
     st.stop()
 
-recommend_clicked = st.button("추천 받기", use_container_width=True)
-if not recommend_clicked:
+if st.button("추천 받기", use_container_width=True):
+    st.session_state.analysis_done = True
+
+if not st.session_state.get("analysis_done", False):
     st.stop()
 
 if selected_home is None:
@@ -785,7 +787,8 @@ if selected_home is None:
 rate = ASSUMPTIONS["annual_interest_rate"]
 time_value = ASSUMPTIONS["hourly_time_value_won"]
 result = build_alternatives(selected_home, budget, rate, time_value, decision_weights)
-best = result.iloc[0]
+feasible = result[result["예산충족"]]
+best = (feasible if not feasible.empty else result).sort_values("AEC").iloc[0]
 commute_row = result[result["유형"] == "통학"].iloc[0]
 rental_rows = result[result["유형"] == "자취"].copy()
 best_economic_rental = rental_rows.sort_values("AEC").iloc[0]
@@ -806,10 +809,20 @@ st.caption(
 
 if not bool(best["예산충족"]):
     st.error("현재 월 예산을 충족하는 대안이 없습니다.")
-elif best["유형"] == "통학":
-    st.success("현재 입력 조건에서는 자취보다 현 거주지 통학이 더 적합합니다.")
 else:
-    st.success("현재 입력 조건에서는 자취가 더 적합합니다.")
+    if best["유형"] == "통학":
+        st.success(f"경제성 기준: 월 예산 {budget}만원 내에서는 통학이 가장 경제적입니다.")
+    else:
+        st.success(f"경제성 기준: 월 예산 {budget}만원 내에서는 '{best['대안']}' 자취가 가장 경제적입니다.")
+    if (best_economic_rental["AEC"] < best["AEC"]
+            and not bool(best_economic_rental["예산충족"])):
+        need = best_economic_rental["월현금지출"] - budget
+        st.caption(
+            f"참고: 예산 제약을 완화하면 '{best_economic_rental['대안']}'가 "
+            f"연 {best['AEC'] - best_economic_rental['AEC']:.0f}만원 더 경제적입니다 "
+            f"(월 예산을 +{need:.0f}만원 올리면 선택 가능)."
+        )
+st.caption("안전·편의까지 반영한 최종 추천은 아래 '무형가치 처리' 섹션 끝에 표시됩니다.")
 
 st.subheader("경제성 공학 비교")
 econ1, econ2, econ3 = st.columns(3)
