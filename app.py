@@ -1558,7 +1558,10 @@ def build_alternatives(
         route_source = transit_route["source"]
         taxi_fare_won = None
     else:
-        route = kakao_driving_route(home, SCHOOL)
+        try:
+            route = kakao_driving_route(home, SCHOOL)
+        except Exception:
+            route = None
     if not transit_route and route:
         commute_distance = route["distance_km"]
         # 카카오맵 대중교통 API는 공식 REST로 제공되지 않아 자동차 길찾기를 기준으로
@@ -1755,9 +1758,17 @@ if st.session_state.page == "input":
 
     with left_col:
         st.markdown('<div class="panel-title">1. 현재 거주지</div>', unsafe_allow_html=True)
+        if not get_kakao_key():
+            render_callout(
+                "info",
+                "주소 검색 비활성화 — 지도 클릭으로 위치 선택",
+                "카카오 REST API 키가 없어 주소 검색을 사용할 수 없습니다. "
+                "오른쪽 지도에서 원하는 위치를 직접 클릭해 현 거주지를 선택하세요.",
+            )
         query = st.text_input(
             "주소 또는 장소명",
             placeholder="예: 대치현대 아파트, 안양역, 경기도 안양시 동안구 관양동",
+            disabled=not bool(get_kakao_key()),
         )
 
         if query.strip() and query != st.session_state.last_query:
@@ -1768,7 +1779,7 @@ if st.session_state.page == "input":
 
         search_col, clear_col = st.columns([3, 1])
         with search_col:
-            if st.button("주소 검색", width="stretch", type="primary"):
+            if st.button("주소 검색", width="stretch", type="primary", disabled=not bool(get_kakao_key())):
                 st.session_state.search_results = cached_search_places(query)
                 st.session_state.last_query = query
                 if st.session_state.search_results:
@@ -1931,8 +1942,16 @@ elif st.session_state.page == "results":
     rate = ASSUMPTIONS["annual_interest_rate"]
     time_value = ASSUMPTIONS["hourly_time_value_won"]
     safety_pct_min = float(st.session_state.get("safety_pct_threshold", 0))
-    result = build_alternatives(selected_home, rate, time_value, decision_weights,
-                                safety_pct_min=safety_pct_min)
+    try:
+        result = build_alternatives(selected_home, rate, time_value, decision_weights,
+                                    safety_pct_min=safety_pct_min)
+    except Exception as _e:
+        render_callout("danger", "분석 중 오류 발생",
+                       f"대안 계산 중 오류가 발생했습니다: {_e}. 입력 화면으로 돌아가 위치를 다시 선택해주세요.")
+        if st.button("← 다시 입력하기", key="back_err"):
+            st.session_state.page = "input"
+            st.rerun()
+        st.stop()
     rental_rows = result[result["유형"] == "자취"]
     if rental_rows.empty:
         render_callout(
